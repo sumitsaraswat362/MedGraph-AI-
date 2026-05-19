@@ -29,9 +29,6 @@ This isn't an LLM wrapper. This is a multi-agent orchestrated reasoning machine.
 ## 📸 Platform Gallery
 
 <p align="center">
-  <img src="assets/Home.png" width="100%" alt="Landing Page">
-</p>
-<p align="center">
   <img src="assets/Intake.png" width="49%" alt="Voice Copilot Intake">
   <img src="assets/AI%20Walkers.png" width="49%" alt="Deploying AI Walkers">
 </p>
