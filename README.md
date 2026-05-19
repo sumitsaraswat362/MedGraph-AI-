@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="assets/landing.png" alt="MedGraph AI Landing" width="100%">
+  <img src="assets/Home.png" alt="MedGraph AI Landing" width="100%">
   
   # 🧬 MedGraph AI
   **Autonomous Clinical Intelligence & Agentic Reasoning Network**
@@ -26,23 +26,23 @@ This isn't an LLM wrapper. This is a multi-agent orchestrated reasoning machine.
 
 ---
 
-## 📸 Platform Capabilities (Screenshots)
+## 📸 Platform Gallery
 
-### 1. Voice-Driven Copilot Intake
-*Replaces tedious form-filling with an autonomous natural language processor that constructs the patient's knowledge graph on the fly.*
-<img src="assets/intake.png" alt="Voice Copilot Intake" width="100%">
-
-### 2. Live Agent Deployment & Reasoning Trace
-*Watch the 7 Jac Walkers traverse the spatial graph in real-time, executing multi-hop ReAct (Reasoning & Acting) loops.*
-<img src="assets/walkers.png" alt="Deploying AI Walkers" width="100%">
-
-### 3. Dynamic Knowledge Graph Traversal
-*A fully interactive visualization of the Jac object-spatial graph (Patient → Conditions → Medications).*
-<img src="assets/graph.png" alt="Knowledge Graph" width="100%">
-
-### 4. Clinical Overview Dashboard
-*Actionable intelligence compiled by the `SummaryWalker` after consuming the subgraph findings of all other agents.*
-<img src="assets/overview.png" alt="Clinical Overview" width="100%">
+<p align="center">
+  <img src="assets/Home.png" width="100%" alt="Landing Page">
+</p>
+<p align="center">
+  <img src="assets/Intake.png" width="49%" alt="Voice Copilot Intake">
+  <img src="assets/AI%20Walkers.png" width="49%" alt="Deploying AI Walkers">
+</p>
+<p align="center">
+  <img src="assets/Patient%20overview.png" width="49%" alt="Clinical Overview">
+  <img src="assets/Knowledge%20Graph.png" width="49%" alt="Knowledge Graph">
+</p>
+<p align="center">
+  <img src="assets/Experimental%20Trials.png" width="49%" alt="Clinical Trials">
+  <img src="assets/Local%20Network%20Care.png" width="49%" alt="Local Care Network">
+</p>
 
 ---
 
