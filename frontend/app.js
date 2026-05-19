@@ -460,20 +460,29 @@ async function startAnalysis(e) {
         };
 
         try {
-            promise = fetch('http://localhost:3000/api/analyze', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(patientData)
-            }).then(res => {
-                if(!res.ok) throw new Error("Server error");
-                return res.json();
-            }).catch(err => {
-                console.warn("Backend unavailable. Using premium mock data.");
-                return mockFallback;
-            });
+            // ONLY try to fetch from localhost if we are actually running on localhost
+            const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            
+            if (isLocal) {
+                promise = fetch('http://localhost:3000/api/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(patientData)
+                }).then(res => {
+                    if(!res.ok) throw new Error("Server error");
+                    return res.json();
+                }).catch(err => {
+                    console.warn("Backend unavailable. Using premium mock data.");
+                    return mockFallback;
+                });
+            } else {
+                // Instantly use mock data if deployed on GitHub pages, skipping the localhost fetch
+                // This prevents Safari/Brave from throwing the "wants to access local network" prompt
+                console.warn("Running in production environment. Instantly using premium mock data.");
+                promise = Promise.resolve(mockFallback);
+            }
         } catch (syncErr) {
-            // Safari throws synchronously if Private Network Access is blocked
-            console.warn("Safari PNA block detected. Using premium mock data.");
+            console.warn("Fallback triggered. Using premium mock data.");
             promise = Promise.resolve(mockFallback);
         }
         
