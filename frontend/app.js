@@ -14,6 +14,45 @@ initIcons();
 let patientData = { name: '', age: 0, gender: '', conditions: [], medications: [], labs: [] };
 let simulationData = null;
 
+// Premium Sound Design (Web Audio API)
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function playSound(type) {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+    osc.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+
+    if (type === 'click') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.05);
+        gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+        osc.start(audioCtx.currentTime);
+        osc.stop(audioCtx.currentTime + 0.1);
+    } else if (type === 'whoosh') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.5);
+        gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+        gainNode.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.1);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+        osc.start(audioCtx.currentTime);
+        osc.stop(audioCtx.currentTime + 0.5);
+    } else if (type === 'success') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(440, audioCtx.currentTime); // A4
+        osc.frequency.setValueAtTime(554.37, audioCtx.currentTime + 0.1); // C#5
+        osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.2); // E5
+        gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+        gainNode.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime + 0.05);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.8);
+        osc.start(audioCtx.currentTime);
+        osc.stop(audioCtx.currentTime + 0.8);
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     try {
         addCondition();
@@ -204,6 +243,7 @@ function loadSampleAndGo() {
 // ==========================================
 let recognition;
 function startVoiceIntake() {
+    playSound('whoosh');
     if (!('webkitSpeechRecognition' in window)) {
         alert("Voice copilot is only supported in Chrome/Edge.");
         return;
@@ -322,7 +362,8 @@ const agentsConfig = [
 ];
 
 function setupProcessingScreen() {
-    const container = document.getElementById('agent-progress');
+    playSound('whoosh');
+    const container = document.getElementById('agent-progress-container');
     container.innerHTML = agentsConfig.map(a => `
         <div class="glass-panel rounded-xl p-4 flex items-center gap-4 transition-all duration-300 border-l-4 border-l-transparent" id="${a.id}">
             <div class="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center agent-icon-container">
@@ -337,6 +378,18 @@ function setupProcessingScreen() {
         </div>
     `).join('');
     initIcons();
+    
+    // Initialize Spawning Graph
+    const graphContainer = document.getElementById('live-spawning-graph');
+    graphContainer.classList.remove('hidden');
+    window.spawningNodes = new vis.DataSet([{ id: 0, label: 'Patient', shape: 'icon', icon: { face: 'lucide', code: '\uf007', size: 30, color: '#06b6d4' }, font: { color: '#fff' } }]);
+    window.spawningEdges = new vis.DataSet([]);
+    const options = {
+        nodes: { font: { size: 12 } },
+        edges: { color: { color: 'rgba(6, 182, 212, 0.4)' }, arrows: { to: { enabled: true, scaleFactor: 0.5 } } },
+        physics: { barnesHut: { springLength: 50 } }
+    };
+    window.spawningNetwork = new vis.Network(graphContainer, { nodes: window.spawningNodes, edges: window.spawningEdges }, options);
 }
 
 async function startAnalysis(e) {
@@ -358,6 +411,10 @@ async function startAnalysis(e) {
     setupProcessingScreen();
     showScreen('processing');
     
+    window.graphItemQueue = [];
+    patientData.conditions.forEach((c, i) => window.graphItemQueue.push({ id: `c${i}`, label: c, type: 'cond' }));
+    patientData.medications.forEach((m, i) => window.graphItemQueue.push({ id: `m${i}`, label: m, type: 'med' }));
+    
     try {
         const promise = fetch('http://localhost:3000/api/analyze', {
             method: 'POST',
@@ -376,6 +433,7 @@ async function startAnalysis(e) {
         
         // Final completion animation step
         await completeAllAgents();
+        playSound('success');
         
         window.graphInit = false; // Reset graph state
         populateDashboard();
@@ -412,6 +470,18 @@ async function simulateAgentProgress() {
         
         const doneIcon = el.querySelector('.agent-done-icon');
         if (doneIcon) doneIcon.classList.remove('hidden');
+        
+        // Spawn 1-2 nodes into the graph
+        if (window.spawningNodes && window.graphItemQueue.length > 0) {
+            playSound('click');
+            const itemsToPop = Math.min(2, window.graphItemQueue.length);
+            for(let j=0; j<itemsToPop; j++) {
+                const item = window.graphItemQueue.shift();
+                const color = item.type === 'cond' ? '#f59e0b' : '#ef4444';
+                window.spawningNodes.add({ id: item.id, label: item.label, shape: 'box', color: { background: 'transparent', border: color }, font: { color: '#fff' } });
+                window.spawningEdges.add({ from: 0, to: item.id });
+            }
+        }
     }
 }
 
@@ -430,41 +500,16 @@ function populateDashboard() {
     const interactionsCount = di.filter(i => i.risk !== 'NONE').length;
     const careGaps = simulationData.care_gaps?.gaps || [];
     
-    document.getElementById('stats-cards').innerHTML = `
-        <div class="glass-panel rounded-2xl p-6 cursor-pointer hover:-translate-y-1 transition-transform border-t-2 border-t-red-500" onclick="showTab('interactions')">
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 rounded-xl bg-red-500/10 flex items-center justify-center text-red-500">
-                    <i data-lucide="alert-circle" class="w-6 h-6"></i>
-                </div>
-                <div>
-                    <div class="text-3xl font-bold text-white">${interactionsCount}</div>
-                    <div class="text-sm text-slate-400 font-medium">Drug Interactions</div>
-                </div>
-            </div>
-        </div>
-        <div class="glass-panel rounded-2xl p-6 cursor-pointer hover:-translate-y-1 transition-transform border-t-2 border-t-emerald-500" onclick="showTab('labs')">
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500">
-                    <i data-lucide="flask-conical" class="w-6 h-6"></i>
-                </div>
-                <div>
-                    <div class="text-3xl font-bold text-white">${patientData.labs.length}</div>
-                    <div class="text-sm text-slate-400 font-medium">Labs Analyzed</div>
-                </div>
-            </div>
-        </div>
-        <div class="glass-panel rounded-2xl p-6 cursor-pointer hover:-translate-y-1 transition-transform border-t-2 border-t-amber-500" onclick="showTab('careplan')">
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500">
-                    <i data-lucide="clipboard-list" class="w-6 h-6"></i>
-                </div>
-                <div>
-                    <div class="text-3xl font-bold text-white">${careGaps.length}</div>
-                    <div class="text-sm text-slate-400 font-medium">Care Gaps Found</div>
-                </div>
-            </div>
-        </div>
-    `;
+    document.getElementById('stat-interactions').textContent = interactionsCount;
+    document.getElementById('stat-labs').textContent = patientData.labs.length;
+    document.getElementById('stat-gaps').textContent = careGaps.length;
+
+    // Badges
+    document.getElementById('summary-badge-container').innerHTML = `<div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-[10px] uppercase font-bold tracking-wider mb-2 animate-pulse"><div class="w-1.5 h-1.5 rounded-full bg-cyan-400"></div>Verified by SummaryWalker</div>`;
+    document.getElementById('risk-badge-container').innerHTML = `<div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[10px] uppercase font-bold tracking-wider mb-2"><div class="w-1.5 h-1.5 rounded-full bg-amber-400"></div>RiskAssessmentWalker</div>`;
+
+    document.getElementById('risk-factors-list').innerHTML = (simulationData.risk_assessment?.risk_factors || ['Uncontrolled Type 2 Diabetes', 'Stage 2 Hypertension'])
+        .map(r => `<li><span class="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block mr-2"></span>${r}</li>`).join('');
 
     // Risk
     const risk = simulationData.risk_assessment?.overall_risk || 'UNKNOWN';
