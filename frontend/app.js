@@ -416,57 +416,66 @@ async function startAnalysis(e) {
     patientData.medications.forEach((m, i) => window.graphItemQueue.push({ id: `m${i}`, label: m, type: 'med' }));
     
     try {
-        const promise = fetch('http://localhost:3000/api/analyze', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(patientData)
-        }).then(res => {
-            if(!res.ok) throw new Error("Server error");
-            return res.json();
-        }).catch(err => {
-            console.warn("Backend unavailable. Using premium mock data for GitHub Pages demo.");
-            return {
-                "drug_interactions": {
-                    "interactions": [
-                        {"drug1": "Lisinopril 20mg", "drug2": "Ibuprofen 400mg", "risk": "HIGH", "mechanism": "NSAIDs can reduce the antihypertensive effect of ACE inhibitors and increase risk of renal impairment."}
-                    ]
-                },
-                "lab_analysis": {
-                    "abnormalities": [
-                        {"lab": "HbA1c", "value": "7.8%", "status": "HIGH", "clinical_significance": "Indicates poorly controlled Type 2 Diabetes."}
-                    ]
-                },
-                "risk_assessment": {
-                    "overall_risk": "HIGH",
-                    "risk_factors": ["Uncontrolled Type 2 Diabetes", "Stage 2 Hypertension", "Potential NSAID-induced renal stress"],
-                    "protective_factors": ["Currently on Metformin"],
-                    "recommendations": ["Discontinue Ibuprofen", "Adjust Lisinopril dosage", "Endocrinology consult"],
-                    "ten_year_outlook": "High risk of cardiovascular events if hypertension and HbA1c remain uncontrolled."
-                },
-                "care_gaps": {
-                    "gaps": [
-                        {"screening_name": "Diabetic Retinopathy Screening", "priority": "OVERDUE", "reasoning": "Annual screening required for T2D."},
-                        {"screening_name": "Renal Function Panel", "priority": "URGENT", "reasoning": "Needed due to Lisinopril + Ibuprofen interaction."}
-                    ]
-                },
-                "provider_network": {
-                    "specialists": [
-                        {"type": "Endocrinologist", "name": "Dr. Sarah Jenkins", "distance": "2.4 miles", "reason": "Expert in uncontrolled T2D"}
-                    ],
-                    "emergency": {"facility": "City General", "phone": "911", "action": "Proceed if experiencing severe symptoms"},
-                    "telehealth": {"provider": "Teladoc Health", "url": "https://teladoc.com"}
-                },
-                "summary": {
-                    "summary": "The patient is a complex case presenting with uncontrolled Type 2 Diabetes (HbA1c 7.8%) and Hypertension. There is a high-risk drug interaction between their prescribed Lisinopril and over-the-counter Ibuprofen which may compromise renal function. Immediate intervention is required to adjust medications and close critical care gaps, including an overdue diabetic eye exam."
-                },
-                "clinical_trials": {
-                    "trials": [
-                        {"name": "REDUCE-IT Diabetic Hypertension Study", "phase": "Phase III", "reason": "Matches patient's dual diagnosis of T2D and Hypertension.", "eligibility": "High"},
-                        {"name": "Novel ACE-Inhibitor Efficacy Trial", "phase": "Phase II", "reason": "Investigating new pathways for patients failing Lisinopril.", "eligibility": "Medium"}
-                    ]
-                }
-            };
-        });
+        let promise;
+        const mockFallback = {
+            "drug_interactions": {
+                "interactions": [
+                    {"drug1": "Lisinopril 20mg", "drug2": "Ibuprofen 400mg", "risk": "HIGH", "mechanism": "NSAIDs can reduce the antihypertensive effect of ACE inhibitors and increase risk of renal impairment."}
+                ]
+            },
+            "lab_analysis": {
+                "abnormalities": [
+                    {"lab": "HbA1c", "value": "7.8%", "status": "HIGH", "clinical_significance": "Indicates poorly controlled Type 2 Diabetes."}
+                ]
+            },
+            "risk_assessment": {
+                "overall_risk": "HIGH",
+                "risk_factors": ["Uncontrolled Type 2 Diabetes", "Stage 2 Hypertension", "Potential NSAID-induced renal stress"],
+                "protective_factors": ["Currently on Metformin"],
+                "recommendations": ["Discontinue Ibuprofen", "Adjust Lisinopril dosage", "Endocrinology consult"],
+                "ten_year_outlook": "High risk of cardiovascular events if hypertension and HbA1c remain uncontrolled."
+            },
+            "care_gaps": {
+                "gaps": [
+                    {"screening_name": "Diabetic Retinopathy Screening", "priority": "OVERDUE", "reasoning": "Annual screening required for T2D."},
+                    {"screening_name": "Renal Function Panel", "priority": "URGENT", "reasoning": "Needed due to Lisinopril + Ibuprofen interaction."}
+                ]
+            },
+            "provider_network": {
+                "specialists": [
+                    {"type": "Endocrinologist", "name": "Dr. Sarah Jenkins", "distance": "2.4 miles", "reason": "Expert in uncontrolled T2D"}
+                ],
+                "emergency": {"facility": "City General", "phone": "911", "action": "Proceed if experiencing severe symptoms"},
+                "telehealth": {"provider": "Teladoc Health", "url": "https://teladoc.com"}
+            },
+            "summary": {
+                "summary": "The patient is a complex case presenting with uncontrolled Type 2 Diabetes (HbA1c 7.8%) and Hypertension. There is a high-risk drug interaction between their prescribed Lisinopril and over-the-counter Ibuprofen which may compromise renal function. Immediate intervention is required to adjust medications and close critical care gaps, including an overdue diabetic eye exam."
+            },
+            "clinical_trials": {
+                "trials": [
+                    {"name": "REDUCE-IT Diabetic Hypertension Study", "phase": "Phase III", "reason": "Matches patient's dual diagnosis of T2D and Hypertension.", "eligibility": "High"},
+                    {"name": "Novel ACE-Inhibitor Efficacy Trial", "phase": "Phase II", "reason": "Investigating new pathways for patients failing Lisinopril.", "eligibility": "Medium"}
+                ]
+            }
+        };
+
+        try {
+            promise = fetch('http://localhost:3000/api/analyze', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(patientData)
+            }).then(res => {
+                if(!res.ok) throw new Error("Server error");
+                return res.json();
+            }).catch(err => {
+                console.warn("Backend unavailable. Using premium mock data.");
+                return mockFallback;
+            });
+        } catch (syncErr) {
+            // Safari throws synchronously if Private Network Access is blocked
+            console.warn("Safari PNA block detected. Using premium mock data.");
+            promise = Promise.resolve(mockFallback);
+        }
         
         // Start animations
         const animPromise = simulateAgentProgress();
