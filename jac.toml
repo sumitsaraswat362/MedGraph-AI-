@@ -1,0 +1,10 @@
+[project]
+name = "medgraph-ai"
+version = "1.0.0"
+description = "MedGraph AI - Agentic Personal Health Navigator built with Jac"
+
+[byllm]
+# Default model (see main.jac Model() — override with BYLLM_MODEL env for Featherless/OpenRouter/etc.)
+model = "groq/llama-3.3-70b-versatile"
+temperature = 0.3
+max_tokens = 4096
