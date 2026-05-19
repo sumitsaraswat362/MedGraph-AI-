@@ -44,9 +44,35 @@ This isn't an LLM wrapper. This is a multi-agent orchestrated reasoning machine.
 ---
 
 ## 🧠 Architecture Diagram
-*(Please view `assets/architecture.png` for the high-res system diagram).*
 
-<img src="assets/architecture.png" alt="System Architecture" width="100%">
+```mermaid
+graph TD
+    A[Frontend Dashboard<br>Vanilla JS + Glassmorphism UI] -->|POST /api/analyze<br>JSON Payload| B(Python Proxy Server<br>server.py)
+    
+    subgraph Agentic Orchestration Layer
+        C[MedGraph Knowledge Graph]
+        D[Patient Node] -->|has_condition| E[Condition Node]
+        D -->|taking| F[Medication Node]
+        D -->|history| G[Lab Result Node]
+        
+        B -->|Build Graph| C
+        
+        C --> H{Concurrent Jac Walkers}
+        H --> I[DrugInteractionWalker]
+        H --> J[LabAnalyzerWalker]
+        H --> K[RiskAssessmentWalker]
+        H --> L[PreventiveCareWalker]
+        H --> M[TrialMatchWalker]
+        H --> N[ProviderNetworkWalker]
+        H --> O[SummaryWalker]
+    end
+    
+    I & J & K & L & M & N & O -->|Async LLM Calls| P((Groq Cloud<br>LLaMA 3.3 70B API))
+    
+    P -.->|Strict JSON| H
+    H -->|Aggregated Graph Insights| B
+    B -.->|HTTP 200 JSON| A
+```
 
 **How it works:**
 1.  **Ingestion:** User inputs data (via Text or Voice WebSpeech API).
