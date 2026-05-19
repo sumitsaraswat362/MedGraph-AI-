@@ -420,7 +420,7 @@ async function startAnalysis(e) {
         const mockFallback = {
             "drug_interactions": {
                 "interactions": [
-                    {"drug1": "Lisinopril 20mg", "drug2": "Ibuprofen 400mg", "risk": "HIGH", "mechanism": "NSAIDs can reduce the antihypertensive effect of ACE inhibitors and increase risk of renal impairment."}
+                    {"drug_a": "Lisinopril 20mg", "drug_b": "Ibuprofen 400mg", "risk": "HIGH", "mechanism": "NSAIDs can reduce the antihypertensive effect of ACE inhibitors and increase risk of renal impairment."}
                 ]
             },
             "lab_analysis": {
